@@ -4,15 +4,15 @@ Plugin Name: Maps Widget for Google Maps
 Plugin URI: https://www.gmapswidget.com/
 Description: Display a single image super-fast loading Google Map in a widget. A larger, full featured map is available in a lightbox. Includes a user-friendly interface and numerous appearance options.
 Author: WebFactory Ltd
-Version: 4.26
+Version: 4.27
 Author URI: https://www.gmapswidget.com/
 Text Domain: google-maps-widget
-Domain Path: lang
 Requires at least: 4.0
-Requires PHP: 5.2
-Tested up to: 6.6
+Requires PHP: 7.2
+Tested up to: 6.8
+License: GPLv2 or later
 
-  Copyright 2012 - 2024  WebFactory Ltd  (email : gmw@webfactoryltd.com)
+  Copyright 2012 - 2025  WebFactory Ltd  (email : gmw@webfactoryltd.com)
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License, version 2, as
@@ -239,7 +239,8 @@ class GMW {
 
   // display error message if WP version is too low
   static function notice_min_version_error() {
-    self::wp_kses_wf('<div class="error"><p>' . sprintf(__('Maps Widget for Google Maps <b>requires WordPress version 4.0</b> or higher to function properly. You are using WordPress version %s. Please <a href="%s">update it</a>.', 'google-maps-widget'), get_bloginfo('version'), admin_url('update-core.php')) . '</p></div>');
+    /* translators: %1$s WordPress version, %2$s is the Dashboard update URL  */
+    self::wp_kses_wf('<div class="error"><p>' . sprintf(__('Maps Widget for Google Maps <b>requires WordPress version 4.0</b> or higher to function properly. You are using WordPress version %1$s. Please <a href="%2$s">update it</a>.', 'google-maps-widget'), get_bloginfo('version'), admin_url('update-core.php')) . '</p></div>');
   } // notice_min_version_error
 
 
@@ -271,7 +272,7 @@ class GMW {
 
     $msg = '';
     $error = false;
-    $api_key = substr(sanitize_key(@$_GET['api_key']), 0, 128);
+    $api_key = substr(sanitize_key($_GET['api_key'] ?? ''), 0, 128);
 
     $test = wp_remote_get(esc_url_raw('https://maps.googleapis.com/maps/api/staticmap?center=new+york+usa&size=100x100&key=' . $api_key));
     if (wp_remote_retrieve_response_message($test) == 'OK') {
@@ -351,7 +352,7 @@ class GMW {
     $map_params['key'] = GMW::get_api_key('embed');
 
     $map_url = 'https://www.google.com/maps/embed/v1/' . $widget['lightbox_mode'] . '?';
-    $map_url .= http_build_query($map_params, null, '&amp;');
+    $map_url .= http_build_query($map_params, "", '&amp;');
 
     return $map_url;
   } // build_lightbox_url
@@ -474,8 +475,9 @@ class GMW {
       exit;
     }
 
-    if (!empty($_GET['redirect'])) {
-      wp_safe_redirect(esc_url($_GET['redirect']));
+    $redirect = sanitize_text_field(wp_unslash($_GET['redirect'] ?? ''));
+    if (!empty($redirect)) {
+      wp_safe_redirect(esc_url($redirect));
     } else {
       wp_safe_redirect(admin_url());
     }
@@ -528,9 +530,11 @@ class GMW {
 
   // display error notice if classic widgets are not available
   static function notice_classic_widgets() {
-    echo '<div class="error notice" style="max-width: 700px;"><p><b>🔥 IMPORTANT 🔥</b><br><br>Google Maps Widget is NOT compatible with the new widgets edit screen (powered by Gutenberg).
-    <br>Install the official <a href="' . esc_url(admin_url('plugin-install.php?s=classic%20widgets&tab=search&type=term')) . '">Classic Widgets</a> plugin if you want to continue using Google Maps Widget.<br>
-    Or install the <a href="' . esc_url(admin_url('plugin-install.php?s=map%20block&tab=search&type=tag')) . '">free Map Block plugin</a> as the fastest way to add a great map to any post or sidebar.</p></div>';
+    if(false === get_option('gmw_disable_classic_widgets_alert')){
+        echo '<div class="error notice" style="max-width: 700px;"><p><b>🔥 IMPORTANT 🔥</b><br><br>Google Maps Widget is NOT compatible with the new widgets edit screen (powered by Gutenberg).
+        <br>Install the official <a href="' . esc_url(admin_url('plugin-install.php?s=classic%20widgets&tab=search&type=term')) . '">Classic Widgets</a> plugin if you want to continue using Google Maps Widget.<br>
+        Or install the <a href="' . esc_url(admin_url('plugin-install.php?s=map%20block&tab=search&type=tag')) . '">free Map Block plugin</a> as the fastest way to add a great map to any post or sidebar.</p></div>';
+    }
   } // notice_classic_widgets
 
 
@@ -539,7 +543,8 @@ class GMW {
     $promo_delta = HOUR_IN_SECONDS - 2;
     $options = GMW::get_options();
     $activate_url = admin_url('options-general.php?page=gmw_options&gmw_open_promo_dialog');
-    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'upgrade', 'redirect' => urlencode($_SERVER['REQUEST_URI'])), admin_url('admin.php'));
+    $request_url = sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '' ));
+    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'upgrade', 'redirect' => urlencode($request_url)), admin_url('admin.php'));
     $dismiss_url = wp_nonce_url($dismiss_url, 'gmw_dismiss_notice');
     
     self::wp_kses_wf('<div id="gmw_activate_notice" class="updated notice"><p>' . __('<b>Maps Widget for Google Maps <span style="color: #d54e21;">PRO</span></b> has more than 50 extra features &amp; options. Our support is super fast &amp; friendly and with the unlimited license you can install GMW on as many sites as you need.</p>', 'google-maps-widget'));
@@ -568,7 +573,8 @@ class GMW {
   static function notice_olduser() {
     $options = GMW::get_options();
     $activate_url = admin_url('options-general.php?page=gmw_options&gmw_open_promo_dialog');
-    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'olduser', 'redirect' => urlencode($_SERVER['REQUEST_URI'])), admin_url('admin.php'));
+    $request_url = sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '' ));
+    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'olduser', 'redirect' => urlencode($request_url)), admin_url('admin.php'));
     $dismiss_url = wp_nonce_url($dismiss_url, 'gmw_dismiss_notice');
 
     echo '<div class="updated notice">';
@@ -582,7 +588,8 @@ class GMW {
   // display message to rate plugin
   static function notice_rate_plugin() {
     $rate_url = 'https://wordpress.org/support/view/plugin-reviews/google-maps-widget?rate=5#postform';
-    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'rate', 'redirect' => urlencode($_SERVER['REQUEST_URI'])), admin_url('admin.php'));
+    $request_url = sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? '' ));
+    $dismiss_url = add_query_arg(array('action' => 'gmw_dismiss_notice', 'notice' => 'rate', 'redirect' => urlencode($request_url)), admin_url('admin.php'));
     $dismiss_url = wp_nonce_url($dismiss_url, 'gmw_dismiss_notice');
 
     echo '<div id="gmw_rate_notice" class="updated notice"><p>' . esc_html__('Hi! We saw you\'ve been using <b>Maps Widget for Google Maps</b> for a week and wanted to ask for your help to make the plugin better.<br>We just need a minute of your time to rate the plugin. Thank you!', 'google-maps-widget');
@@ -628,7 +635,7 @@ class GMW {
                          'settings_url' => admin_url('options-general.php?page=gmw_options'),
                          'nonce_test_api_key' => wp_create_nonce('gmw_test_api_key'),
                          'nonce_activate_license_key' => wp_create_nonce('gmw_activate_license_key'),
-                         'deactivate_confirmation' => __('Are you sure you want to deactivate Maps Widget for Google Maps?' . "\n" . 'All maps will be removed from the site. If you are removing it because of a problem please contact our support. They will be more than glad to help.', 'google-maps-widget'));
+                         'deactivate_confirmation' => __('Are you sure you want to deactivate Maps Widget for Google Maps? All maps will be removed from the site. If you are removing it because of a problem please contact our support. They will be more than glad to help.', 'google-maps-widget'));
 
     if (GMW::is_plugin_admin_page('widgets') || GMW::is_plugin_admin_page('settings') || is_customize_preview()) {
       wp_enqueue_script('jquery-ui-tabs');
@@ -696,7 +703,7 @@ class GMW {
 
     $pointers = get_transient('gmw_pointers');
 
-    $pointer = substr(sanitize_key(@$_POST['pointer']), 0, 64);
+    $pointer = substr(sanitize_key($_POST['pointer'] ?? ''), 0, 64);
 
     if (empty($pointers) || empty($pointers[$pointer])) {
       wp_send_json_error();
@@ -734,7 +741,7 @@ class GMW {
     $options = GMW::get_options();
 
     if (isset($options['license_active']) && $options['license_active'] === true &&
-        isset($options['license_expires']) && $options['license_expires'] >= date('Y-m-d')) {
+        isset($options['license_expires']) && $options['license_expires'] >= wp_date('Y-m-d')) {
       return true;
     } else {
       return false;
@@ -800,8 +807,8 @@ class GMW {
                   <div class="header"><p><a href="#" class="gmw_goto_pro">Learn more</a> about <span class="gmw-pro">PRO</span> features or <a href="#" class="gmw_goto_activation">enter your license key</a></p>';
       if ($promo_active) {
         $delta = $options['first_install_gmt'] + $promo_delta - time();
-        $h = $delta / 3600 % 24;
-        $min = $delta / 60 % 60;
+        $h = fmod($delta / 3600, 24);
+        $min = fmod($delta / 60, 60);
         $out .= '<div class="gmw-discount">We\'ve prepared a special <b>20% welcoming discount</b> available only for another <b class="gmw-countdown" data-endtime="' . ($options['first_install_gmt'] + $promo_delta) . '">' . $h . 'h ' . $min . 'min 0sec</b>. Discounts have been applied on the licenses below.</div>';
       }
       $out .= '</div>'; // header
@@ -1121,7 +1128,7 @@ class GMW {
   static function activate_license_key_ajax() {
     check_ajax_referer('gmw_activate_license_key');
 
-    $code = substr(sanitize_key(@$_POST['code']), 0, 64);
+    $code = substr(sanitize_key($_POST['code'] ?? ''), 0, 64);
     $code = str_replace(' ', '', $code);
 
     if (strlen($code) < 6 || strlen($code) > 50) {
