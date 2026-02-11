@@ -9,7 +9,7 @@ Author URI: https://www.gmapswidget.com/
 Text Domain: google-maps-widget
 Requires at least: 4.0
 Requires PHP: 7.2
-Tested up to: 6.8
+Tested up to: 6.9
 License: GPLv2 or later
 
   Copyright 2012 - 2025  WebFactory Ltd  (email : gmw@webfactoryltd.com)
