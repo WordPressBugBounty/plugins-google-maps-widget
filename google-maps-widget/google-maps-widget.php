@@ -9,10 +9,10 @@ Author URI: https://www.gmapswidget.com/
 Text Domain: google-maps-widget
 Requires at least: 4.0
 Requires PHP: 7.2
-Tested up to: 6.9
+Tested up to: 7.1
 License: GPLv2 or later
 
-  Copyright 2012 - 2025  WebFactory Ltd  (email : gmw@webfactoryltd.com)
+  Copyright 2012 - 2026 WebFactory Ltd  (email : gmw@webfactoryltd.com)
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License, version 2, as
